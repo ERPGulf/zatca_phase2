@@ -1,6 +1,6 @@
 import frappe
-frappe.init(site="husna.erpgulf.com")
-frappe.connect()
+# frappe.init(site="husna.erpgulf.com")
+# frappe.connect()
 import os 
 from subprocess import call
 import subprocess
@@ -600,22 +600,22 @@ def invoice_Zatca_call(invoice_number):
                     # except:       
                     #     frappe.log_error(title='Zatca invoice call failed', message=frappe.get_traceback())
 invoice_Zatca_call(invoice_number='ACC-SINV-2023-00022')
-sys.exit()
+# sys.exit()
 def before_save(invoice_number):  
                     if invoice_number.posting_time == now():
                         frappe.msgprint(" equal to the current time.")
                     else:
                         frappe.msgprint(" not equal to the current time.")
 
-@frappe.whitelist()                
+@frappe.whitelist(allow_guest=True)                
 def zatca_Background(invoice_number=None):
                     frappe.msgprint(frappe.session.user)
-                    # return "something"
+                    return "something"
                     if invoice_number==None:
                             frappe.msgprint("No invoice number received")
                             return
                 
-                    invoice_Zatca_call(invoice_number='ACC-SINV-2023-00022')
+                    # invoice_Zatca_call(invoice_number='ACC-SINV-2023-00022')
 #                     frappe.enqueue(
 #                             invoice_Zatca_call,
 #                             queue="short",

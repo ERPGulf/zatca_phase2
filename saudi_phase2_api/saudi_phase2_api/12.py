@@ -1,6 +1,6 @@
 import frappe
-frappe.init(site="husna.erpgulf.com")
-frappe.connect()
+# frappe.init(site="husna.erpgulf.com")
+# frappe.connect()
 import requests    
 import pyqrcode
 import os

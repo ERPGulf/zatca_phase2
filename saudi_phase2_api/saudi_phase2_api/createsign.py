@@ -1,6 +1,6 @@
 import frappe
-frappe.init(site="husna.erpgulf.com")
-frappe.connect()
+# frappe.init(site="husna.erpgulf.com")
+# frappe.connect()
 import xml.etree.ElementTree as ET
 import uuid 
 import hashlib
