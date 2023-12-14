@@ -15,8 +15,4 @@ bench --site yoursite.yourdomain.com migrate<br>
 
 Now you can see Zatca API installed on your site. Goto Help->About and make sure you have Zatca app installaed.<br> 
 
-Husna 
-# zatca_phase2 git init
-# zatca_phase2
-# zatca_phase2
-# zatca_phase2
+Husna M 
