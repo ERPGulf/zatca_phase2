@@ -1,9 +1,0 @@
-<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
-    <cac:Party>
-        <cac:PartyName>
-            <cbc:Name>ABC Corp</cbc:Name>
-        </cac:PartyName>
-    </cac:Party>
-    <cbc:InvoiceAmount currencyID="USD">1000.00</cbc:InvoiceAmount>
-    <cbc:Discount currencyID="USD">50.00</cbc:Discount>
-</Invoice>

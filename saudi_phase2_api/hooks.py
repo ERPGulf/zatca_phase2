@@ -224,9 +224,8 @@ doc_events = {
 #	"saudi_phase2_api.auth.validate"
 # ]
 doctype_js = {
-    "Sales Invoice" : "public/js/our_sales_invoice.js" }
-doctype_js = {
-    "Saudi Zatca settings" : "public/js/our_setting.js" }
+    "Sales Invoice" : "public/js/our_sales_invoice.js" ,
+    "Saudi Zatca settings" : "public/js/our_setting.js" ,}
 
 
 fixtures = [ {"dt": "Custom Field","filters": [["module", "=", "Saudi Phase2 Api"]] }]
