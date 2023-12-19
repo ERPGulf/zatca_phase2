@@ -58,7 +58,7 @@ def generate_csr():
                 try:
                     err,out = _execute_in_shell(command_generate_csr)
                     frappe.msgprint(out)
-                    with open("generated-csr-20231212093015.csr", "r") as file_csr:
+                    with open("generated-csr-20231218053250.csr", "r") as file_csr:
                         get_csr = file_csr.read()
                     file = frappe.get_doc(
                         {
@@ -80,7 +80,7 @@ def generate_csr():
 def create_CSID(): 
         try:
             settings=frappe.get_doc('Zatca setting')     
-            with open("generated-csr-20231212093015.csr", "r") as f:
+            with open("generated-csr-20231218053250.csr", "r") as f:
                 csr_contents = f.read()
             # frappe.msgprint(csr_contents)
             url = "https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal/compliance"
@@ -95,24 +95,8 @@ def create_CSID():
             'Cookie': 'TS0106293e=0132a679c07382ce7821148af16b99da546c13ce1dcddbef0e19802eb470e539a4d39d5ef63d5c8280b48c529f321e8b0173890e4f'
             }
             response = requests.request("POST", url, headers=headers, data=payload)
+            print(response.text)
             frappe.msgprint(response.text)
-            
-            try:
-                    if frappe.db.exists("File",{ "file_name": f"token ,secret-{settings.name}.CSID","attached_to_name": settings.name, "attached_to_doctype": settings.doctype , "content": response.text,}):
-                        frappe.db.delete("File",{ "file_name": f"token ,secret-{settings.name}.CSID","attached_to_name":settings.name, "attached_to_doctype": settings.doctype, "content": response.text, })
-            except Exception as e:
-                    frappe.msgprint(frappe.get_traceback())
-            file = frappe.get_doc(
-                        {
-                            "doctype": "File",
-                            "file_name": f"token ,secret-{settings.name}.CSID",
-                            "attached_to_doctype": settings.doctype,
-                            "attached_to_name": settings.name,
-                            "content": response.text,
-                            "is_private": 1,
-                        }
-                    )
-            # file.save()
             frappe.msgprint("the CSID formed through url")
         except Exception as e:
                     frappe.msgprint("error")

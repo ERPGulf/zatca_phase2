@@ -13,7 +13,14 @@
   "attach_e_invoice_send_status_with_invoice",
   "pih",
   "create_csr",
-  "csid_attach"
+  "csid_attach",
+  "select",
+  "sandbox_url",
+  "simulation_url",
+  "production_url",
+  "basic_auth",
+  "basic_auth_production",
+  "compliance_request_id"
  ],
  "fields": [
   {
@@ -66,12 +73,48 @@
    "fieldname": "csid_attach",
    "fieldtype": "Button",
    "label": "CSID_attach"
+  },
+  {
+   "fieldname": "sandbox_url",
+   "fieldtype": "Data",
+   "label": "Sandbox url"
+  },
+  {
+   "fieldname": "simulation_url",
+   "fieldtype": "Data",
+   "label": "Simulation url"
+  },
+  {
+   "fieldname": "production_url",
+   "fieldtype": "Data",
+   "label": "Production url"
+  },
+  {
+   "fieldname": "select",
+   "fieldtype": "Select",
+   "label": "Select",
+   "options": "Simulation\nSandbox\nProduction"
+  },
+  {
+   "fieldname": "basic_auth",
+   "fieldtype": "Data",
+   "label": "Basic Auth from CSID"
+  },
+  {
+   "fieldname": "compliance_request_id",
+   "fieldtype": "Data",
+   "label": "compliance request id "
+  },
+  {
+   "fieldname": "basic_auth_production",
+   "fieldtype": "Data",
+   "label": "Basic Auth from production"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-12-15 12:54:11.928582",
+ "modified": "2023-12-19 08:57:53.374835",
  "modified_by": "Administrator",
  "module": "Saudi Phase2 Api",
  "name": "Zatca setting",

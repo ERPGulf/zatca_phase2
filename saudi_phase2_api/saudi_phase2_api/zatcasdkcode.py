@@ -1,7 +1,7 @@
 import frappe
 import os
-# frappe.init(site="husna.erpgulf.com")
-# frappe.connect()
+frappe.init(site="husna.erpgulf.com")
+frappe.connect()
 import xml.etree.ElementTree as ET
 import uuid 
 import hashlib
@@ -180,7 +180,7 @@ def salesinvoice_data(invoice,invoice_number):
                 cbc_UUID = ET.SubElement(invoice, "cbc:UUID")
                 cbc_UUID.text = sales_invoice_doc.custom_uuid
                 uuid1= cbc_UUID.text
-                print(uuid1)
+                # print(uuid1)
                 cbc_IssueDate = ET.SubElement(invoice, "cbc:IssueDate")
                 cbc_IssueDate.text = str(sales_invoice_doc.posting_date)
                 cbc_IssueTime = ET.SubElement(invoice, "cbc:IssueTime")
@@ -419,25 +419,6 @@ def xml_structuring(invoice,sales_invoice_doc):
                     frappe.msgprint(frappe.get_traceback())
 
 
-def send_csr():       
-            headers = {'accept': 'application/json',
-                'OTP': '113753',
-                'Accept-Version': 'V2',
-                'Content-Type': 'application/json', }
-            with open ("encoded_csr.txt" , "r") as read_file :        
-                json_data = {
-                    'csr': read_file.read(),}
-            response = requests.post(
-                'https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal/compliance',
-                headers=headers,
-                json=json_data, )
-            final_resp = json.dumps(response.json())
-            with open("response_from_send_csr.json" , "w")as file : 
-                file.write(final_resp)
-            # print(response.json())
-            data=json.loads(response.text)
-            return data["binarySecurityToken"],  data["secret"]
-
 def sign_invoice():
                 xmlfile_name = 'finalzatcaxml.xml'
                 signed_xmlfile_name = '/opt/oxy/frappe-bench/sites/sdsign.xml'
@@ -513,46 +494,146 @@ def get_Clearance_Status(result):
                         try:
                             json_data = json.loads(result.text)
                             clearance_status = json_data.get("clearanceStatus")
-                            print("clearance statur: " + clearance_status)
+                            print("clearance status: " + clearance_status)
                             return clearance_status
                         except Exception as e:
                             print(e) 
-
-def send_invoice_for_clearance_normal(uuid1,signed_xmlfile_name,path_string,hash_value):
+def xml_base64_Decode(signed_xmlfile_name):
                     with open(signed_xmlfile_name, "r") as file:
-                        xml = file.read().lstrip()
-                        base64_encoded = base64.b64encode(xml.encode("utf-8"))
-                        base64_decoded = base64_encoded.decode("utf-8")
-                        # print(base64_decoded)
-                    url = "https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal/compliance/invoices"
+                                    xml = file.read().lstrip()
+                                    base64_encoded = base64.b64encode(xml.encode("utf-8"))
+                                    base64_decoded = base64_encoded.decode("utf-8")
+                                    return base64_decoded
+                    
+def get_API_url(base_url):
+                    settings = frappe.get_doc('Zatca setting')
+                    if settings.select == "Sandbox":
+                        url = settings.sandbox_url + base_url
+                    elif settings.select == "Simulation":
+                        url = settings.simulation_url + base_url
+                    else:
+                        url = settings.production_url + base_url
+                    return url  # Return the constructed URL
+
+def send_invoice_for_clearance_normal(uuid1, signed_xmlfile_name, hash_value):
+                    settings = frappe.get_doc('Zatca setting')
+                    base_url = "compliance/invoices"
                     payload = json.dumps({
-                    "invoiceHash":hash_value,
-                    "uuid": uuid1,
-                    "invoice": base64_decoded})
-                    headers = { 
+                        "invoiceHash": hash_value,
+                        "uuid": uuid1,
+                        "invoice": xml_base64_Decode(signed_xmlfile_name)
+                    })
+                    headers = {
                         'accept': 'application/json',
                         'Accept-Language': 'en',
                         'Accept-Version': 'V2',
-                        'Authorization': "Basic VFVsSlJERnFRME5CTTNsblFYZEpRa0ZuU1ZSaWQwRkJaVFJUYUhOMmVXNDNNREo1VUhkQlFrRkJRamRvUkVGTFFtZG5jV2hyYWs5UVVWRkVRV3BDYWsxU1ZYZEZkMWxMUTFwSmJXbGFVSGxNUjFGQ1IxSlpSbUpIT1dwWlYzZDRSWHBCVWtKbmIwcHJhV0ZLYXk5SmMxcEJSVnBHWjA1dVlqTlplRVo2UVZaQ1oyOUthMmxoU21zdlNYTmFRVVZhUm1ka2JHVklVbTVaV0hBd1RWSjNkMGRuV1VSV1VWRkVSWGhPVlZVeGNFWlRWVFZYVkRCc1JGSlRNVlJrVjBwRVVWTXdlRTFDTkZoRVZFbDVUVVJaZUUxNlJURk5la1V3VG14dldFUlVTVEJOUkZsNFRXcEZNVTE2UlRCT2JHOTNVMVJGVEUxQmEwZEJNVlZGUW1oTlExVXdSWGhFYWtGTlFtZE9Wa0pCYjFSQ1YwWnVZVmQ0YkUxU1dYZEdRVmxFVmxGUlRFVjNNVzlaV0d4b1NVaHNhRm95YUhSaU0xWjVUVkpKZDBWQldVUldVVkZFUlhkcmVFMXFZM1ZOUXpSM1RHcEZkMVpxUVZGQ1oyTnhhR3RxVDFCUlNVSkNaMVZ5WjFGUlFVTm5Ua05CUVZSVVFVczViSEpVVm10dk9YSnJjVFphV1dOak9VaEVVbHBRTkdJNVV6UjZRVFJMYlRkWldFb3JjMjVVVm1oTWEzcFZNRWh6YlZOWU9WVnVPR3BFYUZKVVQwaEVTMkZtZERoREwzVjFWVms1TXpSMmRVMU9ielJKUTB0cVEwTkJhVmwzWjFselIwRXhWV1JGVVZOQ1ozcERRbWRMVWl0TlNIZDRTRlJCWWtKblRsWkNRVkZOUmtSRmRHRkhSalZaV0hkNVRGUkplazVJZDNwTVZFVjRUV3BOZWsxU09IZElVVmxMUTFwSmJXbGFVSGxNUjFGQ1FWRjNVRTE2VFhoTlZGbDVUMFJaTlU1RVFYZE5SRUY2VFZFd2QwTjNXVVJXVVZGTlJFRlJlRTFVUVhkTlVrVjNSSGRaUkZaUlVXRkVRV2hoV1ZoU2FsbFRRWGhOYWtWWlRVSlpSMEV4VlVWRWQzZFFVbTA1ZGxwRFFrTmtXRTU2WVZjMWJHTXpUWHBOUWpCSFFURlZaRVJuVVZkQ1FsTm5iVWxYUkRaaVVHWmlZa3RyYlZSM1QwcFNXSFpKWWtnNVNHcEJaa0puVGxaSVUwMUZSMFJCVjJkQ1VqSlpTWG8zUW5GRGMxb3hZekZ1WXl0aGNrdGpjbTFVVnpGTWVrSlBRbWRPVmtoU09FVlNla0pHVFVWUFoxRmhRUzlvYWpGdlpFaFNkMDlwT0haa1NFNHdXVE5LYzB4dWNHaGtSMDVvVEcxa2RtUnBOWHBaVXpsRVdsaEtNRkpYTlhsaU1uaHpUREZTVkZkclZrcFViRnBRVTFWT1JreFdUakZaYTA1Q1RGUkZkVmt6U25OTlNVZDBRbWRuY2tKblJVWkNVV05DUVZGVFFtOUVRMEp1VkVKMVFtZG5ja0puUlVaQ1VXTjNRVmxhYVdGSVVqQmpSRzkyVEROU2VtUkhUbmxpUXpVMldWaFNhbGxUTlc1aU0xbDFZekpGZGxFeVZubGtSVloxWTIwNWMySkRPVlZWTVhCR1lWYzFNbUl5YkdwYVZrNUVVVlJGZFZwWWFEQmFNa1kyWkVNMWJtSXpXWFZpUnpscVdWZDRabFpHVG1GU1ZXeFBWbXM1U2xFd1ZYUlZNMVpwVVRCRmRFMVRaM2hMVXpWcVkyNVJkMHQzV1VsTGQxbENRbEZWU0UxQlIwZElNbWd3WkVoQk5reDVPVEJqTTFKcVkyMTNkV1Z0UmpCWk1rVjFXakk1TWt4dVRtaE1NamxxWXpOQmQwUm5XVVJXVWpCUVFWRklMMEpCVVVSQloyVkJUVUl3UjBFeFZXUktVVkZYVFVKUlIwTkRjMGRCVVZWR1FuZE5RMEpuWjNKQ1owVkdRbEZqUkVGNlFXNUNaMnR5UW1kRlJVRlpTVE5HVVc5RlIycEJXVTFCYjBkRFEzTkhRVkZWUmtKM1RVTk5RVzlIUTBOelIwRlJWVVpDZDAxRVRVRnZSME5EY1VkVFRUUTVRa0ZOUTBFd1owRk5SVlZEU1ZGRVQxQXdaakJFY21oblpVUlVjbFpNZEVwMU9HeFhhelJJU25SbFkyWTFabVpsVWt4blpVUTRZMlZWWjBsblpFSkNUakl4U1RNM2FYTk5PVlZ0VTFGbE9IaFNjRWh1ZDA5NFNXYzNkMDR6V1RKMlZIQnpVR2hhU1QwPTpFcGo2OUdoOFRNTXpZZktsdEx2MW9tWktyaWUwc1A2TEF2YW1iUUZIVGd3PQ==",
-                        'Content-Type': 'application/json'}  
-                    settings = frappe.get_doc('Zatca setting')
+                        'Authorization': "Basic" + settings.basic_auth,
+                        'Content-Type': 'application/json'
+                    }
                     settings.pih = hash_value
                     settings.save()
+
+                    try:
+                        url = get_API_url(base_url)
+                        response = requests.request("POST", url=url, headers=headers, data=payload)
+                        return response.text, get_Clearance_Status(response)
+                    except Exception as e:
+                        print(str(e))
+                        return "error", "NOT_CLEARED"
+
+                    # url = "https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal/compliance/invoices"
+                    # payload = json.dumps({
+                    # "invoiceHash":hash_value,
+                    # "uuid": uuid1,
+                    # "invoice": xml_base64_Decode(signed_xmlfile_name)})
+                    # headers = { 
+                    #     'accept': 'application/json',
+                    #     'Accept-Language': 'en',
+                    #     'Accept-Version': 'V2',
+                    #     'Authorization': "Basic"+ settings.basic_auth,
+                    #     'Content-Type': 'application/json'}  
+                    # settings.pih = hash_value
+                    # settings.save()
+                    # # response = requests.request("POST", url, headers=headers, data=payload)
+                    # # print(response.text)
+                    # try:
+                    #     response = requests.request("POST", url, headers=headers, data=payload)
+                    #     return response.text , get_Clearance_Status(response)
+                    # except Exception as e:    
+                    #     print(str(e)) 
+                    #     return "error","NOT_CLEARED"
+
+def production_CSID():
+                    settings = frappe.get_doc('Zatca setting')
+                    url = "https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal/production/csids"
+                    payload = json.dumps({
+                    "compliance_request_id": settings.compliance_request_id
+                    })
+                    headers = {
+                    'accept': 'application/json',
+                    'Accept-Version': 'V2',
+                    'Authorization': 'Basic'+ settings.basic_auth,
+                    'Content-Type': 'application/json' }
                     response = requests.request("POST", url, headers=headers, data=payload)
+                    frappe.msgprint(response.text)
                     print(response.text)
+
+
+def get_Reporting_Status(result):
+                        try:
+                            json_data = json.loads(result.text)
+                            reporting_status = json_data.get("reportingStatus")
+                            print("reportingStatus: " + reporting_status)
+                            return reporting_status
+                        except Exception as e:
+                            print(e) 
+
+def reporting_API(uuid1,hash_value,signed_xmlfile_name):
+                    settings = frappe.get_doc('Zatca setting')
+                    url = "https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal/invoices/reporting/single"
+                    payload = json.dumps({
+                    "invoiceHash": hash_value,
+                    "uuid": uuid1,
+                    "invoice": xml_base64_Decode(signed_xmlfile_name),
+                    })
+                    headers = {
+                    'accept': 'application/json',
+                    'accept-language': 'en',
+                    'Clearance-Status': '1',
+                    'Accept-Version': 'V2',
+                    'Authorization': 'Basic' + settings.basic_auth_production,
+                    'Content-Type': 'application/json',
+                    'Cookie': 'TS0106293e=0132a679c0639d13d069bcba831384623a2ca6da47fac8d91bef610c47c7119dcdd3b817f963ec301682dae864351c67ee3a402866'
+                    }
                     try:
                         response = requests.request("POST", url, headers=headers, data=payload)
-                        return response.text , get_Clearance_Status(response)
+                        frappe.msgprint(response.text , get_Reporting_Status(response))
                     except Exception as e:    
-                        print(str(e)) 
-                        return "error","NOT_CLEARED"
-                        # sys.exit()
-
+                        frappe.msgprint(str(e)) 
+                        frappe.msgprint ("error","NOT_REPORTED")
+                    
+def clearance_API(uuid1,hash_value,signed_xmlfile_name):
+                    settings = frappe.get_doc('Zatca setting')
+                    url = "https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal/invoices/clearance/single"
+                    payload = json.dumps({
+                    "invoiceHash": hash_value,
+                    "uuid": uuid1,
+                    "invoice": xml_base64_Decode(signed_xmlfile_name), })
+                    headers = {
+                    'accept': 'application/json',
+                    'accept-language': 'en',
+                    'Clearance-Status': '1',
+                    'Accept-Version': 'V2',
+                    'Authorization': 'Basic' + settings.basic_auth_production,
+                    'Content-Type': 'application/json',
+                    'Cookie': 'TS0106293e=0132a679c03c628e6c49de86c0f6bb76390abb4416868d6368d6d7c05da619c8326266f5bc262b7c0c65a6863cd3b19081d64eee99' }
+                    response = requests.request("POST", url, headers=headers, data=payload)
+                    frappe.msgprint(response.text)
+                    print(response.text)
 
 def zatca_Call(invoice_number):
         try:
                 invoice= xml_tags()
-                frappe.msgprint("hi zatca")
                 invoice,uuid1,sales_invoice_doc=salesinvoice_data(invoice,invoice_number)
                 invoice=additional_Reference(invoice)
                 invoice=company_Data(invoice,sales_invoice_doc)
@@ -561,12 +642,14 @@ def zatca_Call(invoice_number):
                 invoice=tax_Data(invoice,sales_invoice_doc)
                 invoice=item_data(invoice,sales_invoice_doc)
                 pretty_xml_string=xml_structuring(invoice,sales_invoice_doc)
-                # generate_csr()
                 signed_xmlfile_name,path_string=sign_invoice()
                 generate_qr_code(signed_xmlfile_name,sales_invoice_doc,path_string)
                 hash_value =generate_hash(signed_xmlfile_name,path_string)
                 validate_invoice(signed_xmlfile_name,path_string)
-                result,clearance_status=send_invoice_for_clearance_normal(uuid1,signed_xmlfile_name,path_string, hash_value)
+                result,clearance_status=send_invoice_for_clearance_normal(uuid1,signed_xmlfile_name,hash_value)
+                # production_CSID()
+                reporting_API(uuid1,hash_value,signed_xmlfile_name)
+                clearance_API(uuid1,hash_value,signed_xmlfile_name)
                 current_time =now()
                 if clearance_status == "CLEARED":
                     frappe.get_doc({"doctype":"Zatca Success log","title":"Zatca invoice call done successfully","message":"This message by Zatca Compliance ","invoice_number": invoice_number,"time":current_time,"zatca_response":result}).insert()    
@@ -575,15 +658,14 @@ def zatca_Call(invoice_number):
                 return (json.dumps(result))
         except:       
                 frappe.log_error(title='Zatca invoice call failed', message=frappe.get_traceback())
-
-               
+    
 @frappe.whitelist(allow_guest=True)                        
 def zatca_Background(invoice_number):
                       frappe.msgprint("inside zatca baground")
                       zatca_Call(invoice_number)
-#                     frappe.enqueue(
-#                             zatca_Call,
-#                             queue="short",
-#                             timeout=200,
-#                             invoice_number=invoice_number)
-#                     frappe.msgprint("queued")
+                    # frappe.enqueue(
+                    #         zatca_Call,
+                    #         queue="short",
+                    #         timeout=200,
+                    #         invoice_number=invoice_number)
+                    # frappe.msgprint("queued")
